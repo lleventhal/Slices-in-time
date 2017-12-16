@@ -327,7 +327,7 @@ if (group == "All") {
 quartz()
 summary(ch1$beta)
 } else if (group == "Batch") {
-
+ x<-5
 }
   
   
