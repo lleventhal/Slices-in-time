@@ -329,17 +329,17 @@ if (group == "All") {
   if (Plot == "B30" | Plot == "Comp"){
     #BrapaP<-BrapaP[,-c(2:27)]
     BrapaP_male<-BrapaP_male[,-c(2:16)]
-    BrapaP<-merge(BrapaP, BrapaP_male, by = "id",all.x=T)
+    BrapaP<-merge(BrapaP, BrapaP_male, by = "id",all.x=F)
     #for some reason, this full_join is going way over board... like it should be about 11,000 cells individuals from BrapaP and 1,500 from BrapaP_males to get 12,500. But instead i get 82,902! I am going to see if erasing duplciates fixes this
-    BrapaP<-distinct(BrapaP)
+    #BrapaP<-distinct(BrapaP)
     # it worked.. woohoo! but still werid...
   }
   if (Plot == "Fwest" | Plot == "Track"){
     BrapaP<-BrapaP[,-c(2:27)]
     BrapaP_male<-BrapaP_male[,-c(2:28)]
-    BrapaP<-merge(BrapaP, BrapaP_male, by = "id",all.x=T)
+    BrapaP<-merge(BrapaP, BrapaP_male, by = "id",all.x=F)
     #for some reason, this full_join is going way over board... like it should be about 11,000 cells individuals from BrapaP and 1,500 from BrapaP_males to get 12,500. But instead i get 82,902! I am going to see if erasing duplciates fixes this
-    BrapaP<-distinct(BrapaP)
+    #BrapaP<-distinct(BrapaP)
     # it worked.. woohoo! but still werid...
   }
 
@@ -469,5 +469,34 @@ summary(ch1.dur$beta)
   BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur,tot_flwrs,sex))
 
 }
+
+#####example for saving output####
+
+#initialise dataframe for storing output
+
+out.df<-as.data.frame(matrix(nrow=3,ncol=2))
+out.df.dur<-as.data.frame(matrix(nrow=3,ncol=2))
+
+#loop over some variable
+batch.list<-c("B30", "Comp", "Track", "FWest")
+for (i in 1:4){
+  batch<-batch.list[i]
+  
+  #insert rest of code ...
+  
+  #run chain at end of script
+  ch1<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
+  ch1.dur<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
+
+  #set folder for saving output
+  mod_subfolder<-"data_files_3/files_generated_by_PatAnalysis_Script"
+
+  #store output
+  out.df[i,1]<-batch
+  out.df[i,2]<-ch1$beta
+ } #close loop over batches
+  
+ #save csv
+ write.csv(out.df, paste(save_location, mod_subfolder, "out.csv", sep="/"), row.names=F)
   
   
