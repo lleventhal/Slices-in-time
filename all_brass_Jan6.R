@@ -529,6 +529,15 @@ summary(ch1.dur$beta)
   BrapaG<-merge(BrapaP,BrapaG,by="id")
   BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur,tot_flwrs,sex))
 
+  
+  ####Example for saving 2####
+  Beta.out<-ch1$beta
+  B<-length(Beta.out)
+  Beta.df<-as.data.frame(matrix(nrow=B, ncol=1))
+  for (b in 1:B){
+    Beta.df[b,1]<-Beta.out[b]
+  }
+  write.csv(Beta.df, "Beta.df.csv", row.names=FALSE)
 
   
   
