@@ -1,12 +1,13 @@
 #Packages
 library(MasterBayes)
 library(dplyr)
+library(tidyr)
 
 #Parameters
 group<-"All" #or "Batch"
-Plot<-"Track" #pick the batch you want
+Plot<-"Fwest" #pick the batch you want
 Type<-"Part"
-Vrs<-c(15:40) #variables want to calculate
+Vrs<-c(43:46) #variables want to calculate
 trait.fun<-function(Plot, type="Full"){
   if (Plot == "B30" | Plot == "Comp") {
     if (type == "Full") {traits<-c(1:14,41:43)} else if (
@@ -39,7 +40,7 @@ zscore<-function(X){(X-mean(X))/sd(X)} 	#function to standardize traits from Aus
 
 #Set working directory
 save_location<-"~/Users/lauraleventhal/Dropbox/ISfolder_Laura_Leventhal"
-setwd("~/Dropbox/ISfolder_Laura_Leventhal/Nov_7_all_sheets")
+setwd("~/Dropbox/ISfolder_Laura_Leventhal/All_brass_files")
 
 #code
 if (group == "All") {
@@ -343,6 +344,61 @@ if (group == "All") {
     # it worked.. woohoo! but still werid...
   }
 
+  if (Plot == "B30" | Plot == "Track"){
+    large_clump_info<-read.csv("EvenSite_LrgClump.csv")
+    medium_clump_info<-read.csv("EvenSite_MedClump.csv")
+    small_clump_info<-read.csv("EvenSite_SmClump.csv")
+    
+    male2<-BrapaP[grep("Male", BrapaP$sex),]
+    male3<-data.frame(do.call('rbind', strsplit(as.character(male2$id),'_',fixed=TRUE)))
+    colnames(male3)[2]<-"pat_pos"
+    male4<-merge(male3,small_clump_info,by="pat_pos")
+    male5<-merge(male4,medium_clump_info,by="pat_pos")
+    male6<-merge(male5,large_clump_info,by="pat_pos")
+    male6$id<- paste(male6$X1,male6$pat_pos, sep="_")
+    male6<-male6[-c(1,2,4:9)]
+
+
+    #x<-LETTERS
+    #y<-(1:26)
+    #df1<-data.frame(x,y)
+    #colnames(df1)[1]<-"sm_clump"
+    #BrapaP<-merge(BrapaP,df1,by="sm_clump",all.x=T)
+    #colnames(BrapaP)[28]<-"sm_clump"
+    #colnames(df1)[1]<-"med_clump"
+    #BrapaP<-merge(BrapaP,df1,by="med_clump",all.x=T)
+    #colnames(BrapaP)[29]<-"med_clump"
+    #colnames(df1)[1]<-"lrg_clump"
+    #BrapaP<-merge(BrapaP,df1,by="lrg_clump",all.x=T)
+    #colnames(BrapaP)[30]<-"lrg_clump"
+    #BrapaP<-distinct(BrapaP)
+    
+    female1<-BrapaP[grep("Female", BrapaP$sex),]
+    female1<-female1[,-c(25:27)]
+    female2<-data.frame(do.call('rbind', strsplit(as.character(female1$id),'_',fixed=TRUE)))
+    female3<- cbind(female2,med_clump=rep(female2$X3))
+    female4<- cbind(female3,lrg_clump=rep(female3$X3))
+    female5<- cbind(female4,sm_clump=rep(female4$X3))
+    female5$id<-paste(female5$X1,female5$X2,female5$X3,sep="_")
+    female5<-female5[,-c(1:3)]
+    female1<-merge(female1,female5,by="id")
+    female1<-female1[,-c(2:24)]
+    
+    test<-rbind(female1,male6)
+    
+    BrapaP<-merge(BrapaP,test,by="id",all.x=T)
+    BrapaP<-distinct(BrapaP)
+    
+  }#end of loop for applying small, med, and large restrictions for even plots
+  
+  if (Plot == "Comp" | Plot == "Fwest"){
+    male1<-BrapaP[grep("Male", BrapaP$sex),]
+     male2<-data.frame(do.call('rbind', strsplit(as.character(male1$id),'_',fixed=TRUE)))
+     male3<-cbind(male2,pat_pos=rep(male2$X2))
+     male3$id<-paste(male3$X1,male3$X2,sep="_")
+     male3<-male3[,-c(1:2)]
+     clump1<-male3[grep(1:36,male3$pat_pos)]
+  }
   
   BrapaP_for_MB<-BrapaP
   BrapaG_for_MB<-BrapaG
@@ -401,6 +457,11 @@ if (group == "All") {
     if (v == 41){var41<-expression(varPed(x="z.tot_flwrs", gender="Male"))} 
     if (v == 42){var42<-expression(varPed(x="z.dur_flwrs", gender="Male"))} 
     if (v == 43){var.dist<-expression(varPed(x=c("X", "Y"), gender="Male", relational="MATE"))}
+    
+    if(v == 44){var.small<-expression(varPed(x="sm_clump",gender="Male",relational="MATE"))}
+    if(v == 45){var.medium<-expression(varPed(x="med_clump",gender="Male",relational="MATE"))}
+    if(v == 46){var.large<-expression(varPed(x="lrg_clump",gender="Male",relational="MATE"))}
+    
   } #end for loop
   Vrs.list<-lapply(ls(pattern="var*"),get)
   
@@ -414,9 +475,9 @@ if (group == "All") {
   ####GdP####
   GdP<-GdataPed(G=BrapaG_for_MB, categories=NULL, perlocus=T)	#need to specify 'per locus' to allow variable error rates by locus.
   
-  mod_subfolder<-"data_files_3/files_generated_by_PatAnalysis_Script"
+  #mod_subfolder<-"data_files_3/files_generated_by_PatAnalysis_Script"
   #MODEL: Distance, start date, total flowers, duration of flowering, skew, etc. by batch
-  mod_subfolder<-"data_files/Analysis_Dec_19_LL"	#This empty folder should already be present.
+ # mod_subfolder<-"data_files/Analysis_Dec_19_LL"	#This empty folder should already be present.
   
   
   
@@ -427,8 +488,10 @@ if (group == "All") {
    #     sum(Vrs) == 231) {PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var1,var2, var3,var4,var5,var6,var7,var8,var9,var10,var11,var12,var13,var14,var41,var42,var.dist), data=BrapaP_for_MB)} else if (
   #        sum(Vrs) == 841) {PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var15,var16, var17,var18,var19,var20,var21,var22,var23,var24,var25,var26,var27,var28,var29,var30,var31,var32,var33,var34,var35,var36,var37,var38,var39,var40,var41,var42,var.dist), data=BrapaP_for_MB)}
   
-PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen,var15, var16, var17, var18, var19, var20, var21, var22, var23, var24, var25, var26, var27, var28, var30, var31, var32, var33, var34, var35, var36, var37, var38, var39, var40 ), data=BrapaP_for_MB)
-  #  system is computationally singular: reciprocal condition number = 2.48059e-19
+PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, var.dist), data=BrapaP_for_MB)
+  #PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var.small), data=BrapaP_for_MB)
+  # when just one alone, it is missing covariate data
+  
 
  # var15, var16, var17, var18, var19, var20, var21, var22, var23, var24, var25, var26, var27, var28, var30, var31, var32, var33, var34, var35, var36, var37, var38, var39, var40
   #var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14
@@ -448,8 +511,21 @@ PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen,var15, var16, var1
   #BrapaP_for_MB$population_num=NULL
   #BrapaP_for_MB$type_of_site=NULL
   
+  ####saving output####
+  #initialize dataframe for storing output
+  
+  out.df<-as.data.frame(matrix(nrow=3,ncol=2))
+  out.df.dur<-as.data.frame(matrix(nrow=3,ncol=2))
+  
+  #loop over some variable
+    batch.list<-c("B30", "Comp", "Track", "FWest")
+  for (i in 1:4){
+      batch<-batch.list[i]
+      #not sure if I need this
+      
+      
+  
   ch1<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
-  ch1.dur<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
   mod_subfolder<-"data_files_3/files_generated_by_PatAnalysis_Script"
   save(ch1, file=paste(save_location, mod_subfolder, "m12.ch1.Rdata", sep="/"))
   write.csv(ch1, file = "Fwest_sum_slices_ch1.csv")
@@ -458,7 +534,21 @@ PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen,var15, var16, var1
 summary(ch1$beta)
 quartz()
 summary(ch1.dur$beta)
-} else if (group == "Batch") {
+
+
+#set folder for saving output
+  mod_subfolder<-"Data_files/files_generated_by_fullpay_analysis"
+    #store output
+      out.df[i,1]<-batch
+    out.df[i,2]<-ch1$beta
+   } #close loop over batches
+    #save csv
+     write.csv(out.df, paste(save_location, mod_subfolder, "out.csv", sep="/"), row.names=F)
+
+
+
+} 
+ else if (group == "Batch") {
   #script for doing analysis just by batch 
   BrapaG<-read.csv(paste("BrapaG_", Plot, ".csv", sep=""))
   BrapaP<-read.csv(paste("BrapaP_", Plot, ".csv", sep=""))
@@ -468,6 +558,42 @@ summary(ch1.dur$beta)
   BrapaG<-merge(BrapaP,BrapaG,by="id")
   BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur,tot_flwrs,sex))
 
-}
+  if (Plot == "Fwest"){
+    fwest_prob<-BrapaP[grep("2808c_FWest_bG_F|2809c_FWest_bG_F|2810c_FWest_bG_F|2811c_FWest_bG_F|2814c_FWest_bG_F",BrapaP$id),]
+    
+    fwest_prob$terr<-paste("Fwest_bG_F")
+    fwest_1<-data.frame(do.call('rbind', strsplit(as.character(fwest_prob$id),'_',fixed=TRUE)))
+    
+    fwest_prob<-cbind(fwest_1,fwest_prob)
+    
+    fwest_prob$X2<-paste("Fwest")
+    
+    fwest_prob$id<-NULL
+    
+    fwest_prob$id<-paste(fwest_prob$X1, fwest_prob$X2,fwest_prob$X3, fwest_prob$X4, sep="_")
+    fwest_prob<-fwest_prob[,-c(1:4)]
+    
+    BrapaP<-BrapaP[-grep("2808c_FWest_bG_F|2809c_FWest_bG_F|2810c_FWest_bG_F|2811c_FWest_bG_F|2814c_FWest_bG_F",BrapaP$id),]
+    
+    BrapaP<-rbind(BrapaP,fwest_prob)
+    
+    ######same thing for BrapaG####
+    fwest_probG<-BrapaG[grep("2808c_FWest_bG_F|2809c_FWest_bG_F|2810c_FWest_bG_F|2811c_FWest_bG_F|2814c_FWest_bG_F",BrapaG$id),]
+    
+    fwest_1G<-data.frame(do.call('rbind', strsplit(as.character(fwest_probG$id),'_',fixed=TRUE)))
+    
+    fwest_probG<-cbind(fwest_1G,fwest_probG)
+    
+    fwest_probG$X2<-paste("Fwest")
+    
+    fwest_probG$id<-NULL
+    
+    fwest_probG$id<-paste(fwest_probG$X1, fwest_probG$X2,fwest_probG$X3, fwest_probG$X4, sep="_")
+    fwest_probG<-fwest_probG[,-c(1:4)]
+    
+    BrapaG<-BrapaG[-grep("2808c_FWest_bG_F|2809c_FWest_bG_F|2810c_FWest_bG_F|2811c_FWest_bG_F|2814c_FWest_bG_F",BrapaG$id),]
+    
+    BrapaG<-rbind(BrapaG,fwest_probG)
+  } 
   
   
