@@ -511,43 +511,24 @@ PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, var.dist), data=BrapaP_for_
   #BrapaP_for_MB$population_num=NULL
   #BrapaP_for_MB$type_of_site=NULL
   
-  ####saving output####
-  #initialize dataframe for storing output
-  
-  out.df<-as.data.frame(matrix(nrow=3,ncol=2))
-  out.df.dur<-as.data.frame(matrix(nrow=3,ncol=2))
-  
-  #loop over some variable
-    batch.list<-c("B30", "Comp", "Track", "FWest")
-  for (i in 1:4){
-      batch<-batch.list[i]
-      #not sure if I need this
-      
+
       
   
   ch1<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
-  mod_subfolder<-"data_files_3/files_generated_by_PatAnalysis_Script"
-  save(ch1, file=paste(save_location, mod_subfolder, "m12.ch1.Rdata", sep="/"))
-  write.csv(ch1, file = "Fwest_sum_slices_ch1.csv")
-  save(ch1, file=paste(save_location,mod_subfolder, sep="/"))
-  save(ch1, file=paste(save_location, mod_subfolder, "ch1.Fwest.sum_slices.RData", sep="/"))
-summary(ch1$beta)
-quartz()
-summary(ch1.dur$beta)
 
-
-#set folder for saving output
-  mod_subfolder<-"Data_files/files_generated_by_fullpay_analysis"
-    #store output
-      out.df[i,1]<-batch
-    out.df[i,2]<-ch1$beta
-   } #close loop over batches
-    #save csv
-     write.csv(out.df, paste(save_location, mod_subfolder, "out.csv", sep="/"), row.names=F)
+  ####saving output####
+  Beta.out<-ch1$beta
+  B<-length(Beta.out)
+  Beta.df<-as.data.frame(matrix(nrow=B,ncol=1))
+  for (b in 1:B){
+    Beta.df[b,1]<-Beta.out[b]
+  }
+  write.csv(Beta.df, "Beta.df.csv", row.names=FALSE)
+  
+  summary(ch1$beta)
 
 
 
-} 
  else if (group == "Batch") {
   #script for doing analysis just by batch 
   BrapaG<-read.csv(paste("BrapaG_", Plot, ".csv", sep=""))
@@ -595,5 +576,6 @@ summary(ch1.dur$beta)
     
     BrapaG<-rbind(BrapaG,fwest_probG)
   } 
+ }
   
   
