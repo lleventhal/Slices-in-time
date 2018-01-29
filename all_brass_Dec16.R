@@ -12,11 +12,11 @@ Distance<-"Not-Fancy" #Fancy-meaning special clump distances
 Vrs<-c(1:51) #variables want to calculate
 trait.fun<-function(Plot, type="Full"){
   if (Plot == "B30" | Plot == "Comp") {
-    if (type == "Full") {traits<-c(1:14,41:50)} else if (
-      type == "Part") {traits<-c(41:50)}} else if (
+    if (type == "Full") {traits<-c(1:51)} else if (
+      type == "Part") {traits<-c(1:51)}} else if (
         Plot == "Fwest" | Plot == "Track") {
-        if (type == "Full") {traits<-c(15:50)} else if (
-          type == "Part") {traits<-c(41:50)}}
+        if (type == "Full") {traits<-c(1:51)} else if (
+          type == "Part") {traits<-c(1:51)}}
   
   return(traits)
 } #select traits based on plots #select traits based on plots
@@ -28,8 +28,8 @@ zscore.fun<-function(df,trait,trait.name){
 } #create and bind z-score columns to df
 included_loci<-c(1:10)
 number_loci<-length(included_loci)
-epsilon1<-c(0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005)	#allelic dropout
-epsilon2<-c(0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005)	#stochastic (misscore) error
+epsilon1<-c(0.0122,0.0375,0.0093,0.0617,0.0110,0.0201,0.0221,0.0573,0.0192,0.0096)#allelic dropout
+epsilon2<-c(0.0034,0.0068,0.0092,0.0061,0.0067,0.0426,0.0055,0.0144,0.0476,0.0067)#stochastic (misscore) error
 if (Plot == "B30" | Plot == "Comp"){
   p.list<-c(2:18) #column indices for calculating z-scores
 } else if (Plot == "Track" | Plot == "Fwest"){
@@ -201,7 +201,7 @@ if (group == "All") {
     BrapaP_male$batchsumP<-rowSums(BrapaP_male[,47:48])
     BrapaP_male$batchsumQ<-rowSums(BrapaP_male[,48:49])
     
-    BrapaP_male<-BrapaP_male[,-c(2:11,25:50)] 
+    BrapaP_male<-BrapaP_male[,-c(2:11,26:50)] 
     BrapaP<-merge(BrapaP,BrapaP_male,by="id",all.x=T)
     BrapaP<-distinct(BrapaP)
   }#creates batchsum and batch dur proportion variables in Fwest or Track 
@@ -341,7 +341,7 @@ if (group == "All") {
     #Convert the traits we want to estimate selection on to z-scores
     BrapaP_male2<-BrapaP[grep("Male",BrapaP$sex),]
     trait_file<-select(BrapaP_male2, id, tot_flwrs, dur_inpop:batchsumQ)
-    p.list<-c(2:33)
+    p.list<-c(2:34)
     for (p in p.list){
       trait_file<-zscore.fun(trait_file,trait_file[,p],paste(names(trait_file)[p],sep="."))
     }
@@ -358,14 +358,17 @@ if (group == "All") {
     # it worked.. woohoo! but still werid...
   }
   if (Plot == "Fwest" | Plot == "Track"){
-    BrapaP<-BrapaP[,-c(7:8,10:40)]
-    trait_file<-trait_file[,-c(2:33)]
+    BrapaP<-BrapaP[,-c(7:8,10:41)]
+    trait_file<-trait_file[,-c(2:34)]
     BrapaP<-merge(BrapaP, trait_file, by = "id",all.x=T)
     #for some reason, this full_join is going way over board... like it should be about 11,000 cells individuals from BrapaP and 1,500 from BrapaP_males to get 12,500. But instead i get 82,902! I am going to see if erasing duplciates fixes this
     BrapaP<-distinct(BrapaP)
     # it worked.. woohoo! but still werid...
   }
 if (Distance == "Fancy"){
+  
+  
+  
   if (Plot == "B30" | Plot == "Track"){
     large_clump_info<-read.csv("EvenSite_LrgClump.csv")
     medium_clump_info<-read.csv("EvenSite_MedClump.csv")
@@ -441,7 +444,79 @@ if (Distance == "Fancy"){
   }
   
 }
+  #special####
+  if (Plot == "B30"){
+    BrapaG_special<-merge(BrapaG,BrapaP, by="id")
+  BrapaG_special<-subset(BrapaG_special, select=-c(24:45))
+  colnames(BrapaG_special)[2]<-"timevar"
+  BrapaG_special<-filter(BrapaG_special, offspring > 0)
+  distinct(BrapaG_special)
+  BrapaG_special<-BrapaG_special[-grep("bB2",BrapaG_special$timevar),]
+  BrapaG_special<-BrapaG_special[grep("BA",BrapaG_special$timevar),]#this is where you choose the offpsring that you want
+  BrapaG<-BrapaG[-grep("c_",BrapaG$id),]
+  BrapaG<-BrapaG[-grep("p_",BrapaG$id),]
+  BrapaG_special$offspring<-NULL
+  BrapaG<-rbind(BrapaG,BrapaG_special)
+  BrapaG$offspring<-NULL
   
+  BrapaP_special<-filter(BrapaP, offspring > 0)
+  #BrapaP_special<-BrapaP_special[-grep("bD2",BrapaP_special$timevar),]
+  BrapaP_special<-BrapaP_special[grep("bA",BrapaP_special$timevar),]#this is where you choose the offpsring that you want
+  BrapaP<-BrapaP[-grep("c_",BrapaP$id),]
+  BrapaP<-BrapaP[-grep("p_",BrapaP$id),]
+  BrapaP<-rbind(BrapaP,BrapaP_special)
+  BrapaP<-distinct(BrapaP)
+  BrapaG<-distinct(BrapaG)
+  #make sure this is working right... not sure. 
+  }#end lop for by batch for b30
+  if (Plot == "Comp"){
+    BrapaG_special<-merge(BrapaG,BrapaP, by="id")
+    BrapaG_special<-subset(BrapaG_special, select=-c(24:45))
+    colnames(BrapaG_special)[2]<-"timevar"
+    BrapaG_special<-filter(BrapaG_special, offspring > 0)
+    distinct(BrapaG_special)
+     #BrapaG_special<-BrapaG_special[-grep("bD2",BrapaG_special$timevar),]
+    BrapaG_special<-BrapaG_special[grep("bE",BrapaG_special$timevar),]#this is where you choose the offpsring that you want
+    BrapaG<-merge(BrapaG,BrapaP, by="id")
+    BrapaG<-subset(BrapaG, select=-c(24:45))
+    colnames(BrapaG)[2]<-"timevar"
+    BrapaG<-filter(BrapaG, offspring < 1)
+    BrapaG<-rbind(BrapaG,BrapaG_special)
+    
+    BrapaP_special<-filter(BrapaP, offspring > 0)
+   # BrapaP_special<-BrapaP_special[-grep("bD2",BrapaP_special$timevar),]
+    BrapaP_special<-BrapaP_special[grep("bE",BrapaP_special$timevar),]#this is where you choose the offpsring that you want
+    BrapaP<-filter(BrapaP, offspring < 1)
+    BrapaP<-rbind(BrapaP,BrapaP_special)
+    BrapaP<-distinct(BrapaP)
+    BrapaG<-distinct(BrapaG)
+    BrapaG$offspring<-NULL
+  }#end loop for by batch comp
+  if (Plot == "Fwest" | Plot == "Track"){
+    BrapaG_special<-merge(BrapaG,BrapaP, by="id")
+    BrapaG_special<-subset(BrapaG_special, select=-c(24:61))
+    colnames(BrapaG_special)[2]<-"timevar"
+    BrapaG_special<-filter(BrapaG_special, offspring > 0)
+    distinct(BrapaG_special)
+   # BrapaG_special<-BrapaG_special[-grep("bO2",BrapaG_special$timevar),]
+    BrapaG_special<-BrapaG_special[grep("bQ",BrapaG_special$timevar),]#this is where you choose the offpsring that you want
+    BrapaG<-merge(BrapaG,BrapaP, by="id")
+    BrapaG<-subset(BrapaG, select=-c(2,24:61))
+    #colnames(BrapaG)[2]<-"timevar"
+    BrapaG<-filter(BrapaG, offspring < 1)
+    BrapaG_special<-subset(BrapaG_special, select=-c(2,23))
+    BrapaG<-subset(BrapaG, select=-c(22))
+    BrapaG<-rbind(BrapaG,BrapaG_special)
+    
+    BrapaP_special<-filter(BrapaP, offspring > 0)
+    #BrapaP_special<-BrapaP_special[-grep("bO2",BrapaP_special$timevar),]
+    BrapaP_special<-BrapaP_special[grep("bQ",BrapaP_special$timevar),]#this is where you choose the offpsring that you want
+    BrapaP<-filter(BrapaP, offspring < 1)
+    BrapaP<-rbind(BrapaP,BrapaP_special)
+    BrapaP<-distinct(BrapaP)
+    BrapaG<-distinct(BrapaG)
+    #BrapaG$offspring<-NULL
+  }#end loop for by batch track and fwest
   
   BrapaP_for_MB<-BrapaP
   BrapaG_for_MB<-BrapaG
@@ -453,6 +528,9 @@ if (Distance == "Fancy"){
   res.osterr<-expression(varPed(x="terr", gender="Female", relational="OFFSPRING", restrict="=="))
   #Restriction 3: Father must have been 'active' (flowering) during the tagging interval in which offpsring was produced
   res.phen<-expression(varPed(x="timevar", gender="Male", relational="OFFSPRING", restrict="=="))	#Only parent rows where timevar == os timevar can have non-zero paternity
+  
+  #special
+ # res.batch<-expression(varPed(x="timevar", restrict="bA"))
   
   ####variables####
   for (v in Vrs){
@@ -477,33 +555,35 @@ if (Distance == "Fancy"){
     if (v == 19){var19<-expression(varPed(x="z.batchsumK", gender="Male"))}
     if (v == 20){var20<-expression(varPed(x="z.batchsumL", gender="Male"))}
     if (v == 21){var21<-expression(varPed(x="z.batchsumM", gender="Male"))}
-    if (v == 22){var22<-expression(varPed(x="z.batchsumN", gender="Male"))}
-    if (v == 23){var23<-expression(varPed(x="z.batchsumN2", gender="Male"))}
-    if (v == 24){var24<-expression(varPed(x="z.batchsumO", gender="Male"))}
-    if (v == 25){var25<-expression(varPed(x="z.batchsumO2", gender="Male"))}
-    if (v == 26){var26<-expression(varPed(x="z.batchsumP", gender="Male"))}
-    if (v == 27){var27<-expression(varPed(x="z.batchsumQ", gender="Male"))}
-    if (v == 28){var28<-expression(varPed(x="z.batchdurG", gender="Male"))}
-    if (v == 29){var29<-expression(varPed(x="z.batchdurH", gender="Male"))}
-    if (v == 30){var30<-expression(varPed(x="z.batchdurI", gender="Male"))}
-    if (v == 31){var31<-expression(varPed(x="z.batchdurJ", gender="Male"))}
-    if (v == 32){var32<-expression(varPed(x="z.batchdurK", gender="Male"))}
-    if (v == 33){var33<-expression(varPed(x="z.batchdurL", gender="Male"))}
-    if (v == 34){var34<-expression(varPed(x="z.batchdurM", gender="Male"))}
-    if (v == 35){var35<-expression(varPed(x="z.batchdurN", gender="Male"))}
-    if (v == 36){var36<-expression(varPed(x="z.batchdurN2", gender="Male"))}
-    if (v == 37){var37<-expression(varPed(x="z.batchdurO", gender="Male"))}
-    if (v == 38){var38<-expression(varPed(x="z.batchdurO2", gender="Male"))}
-    if (v == 39){var39<-expression(varPed(x="z.batchdurP", gender="Male"))}
-    if (v == 40){var40<-expression(varPed(x="z.batchdurQ", gender="Male"))}
+    if (v == 22){var22<-expression(varPed(x="z.batchsumM2", gender="Male"))}
+    if (v == 23){var23<-expression(varPed(x="z.batchsumN", gender="Male"))}
+    if (v == 24){var24<-expression(varPed(x="z.batchsumN2", gender="Male"))}
+    if (v == 25){var25<-expression(varPed(x="z.batchsumO", gender="Male"))}
+    if (v == 26){var26<-expression(varPed(x="z.batchsumO2", gender="Male"))}
+    if (v == 27){var27<-expression(varPed(x="z.batchsumP", gender="Male"))}
+    if (v == 28){var28<-expression(varPed(x="z.batchsumQ", gender="Male"))}
+    if (v == 29){var29<-expression(varPed(x="z.batchdurG", gender="Male"))}
+    if (v == 30){var30<-expression(varPed(x="z.batchdurH", gender="Male"))}
+    if (v == 31){var31<-expression(varPed(x="z.batchdurI", gender="Male"))}
+    if (v == 32){var32<-expression(varPed(x="z.batchdurJ", gender="Male"))}
+    if (v == 32){var33<-expression(varPed(x="z.batchdurK", gender="Male"))}
+    if (v == 34){var34<-expression(varPed(x="z.batchdurL", gender="Male"))}
+    if (v == 35){var35<-expression(varPed(x="z.batchdurM", gender="Male"))}
+    if (v == 36){var36<-expression(varPed(x="z.batchdurM2", gender="Male"))}
+    if (v == 37){var37<-expression(varPed(x="z.batchdurN", gender="Male"))}
+    if (v == 38){var38<-expression(varPed(x="z.batchdurN2", gender="Male"))}
+    if (v == 39){var39<-expression(varPed(x="z.batchdurO", gender="Male"))}
+    if (v == 40){var40<-expression(varPed(x="z.batchdurO2", gender="Male"))}
+    if (v == 41){var41<-expression(varPed(x="z.batchdurP", gender="Male"))}
+    if (v == 42){var42<-expression(varPed(x="z.batchdurQ", gender="Male"))}
     
-    if (v == 41){var41<-expression(varPed(x="z.tot_flwrs", gender="Male"))} 
-    if (v == 42){var42<-expression(varPed(x="z.dur", gender="Male"))} #comp and b30 only
-    if (v == 43){var43<-expression(varPed(x="z.dur_inpop", gender="Male"))} #fwest and track only
-    if (v == 44){var44<-expression(varPed(x="z.dur_total", gender="Male"))}#fwest and track only 
-    if (v == 45){var45<-expression(varPed(x="z.sd", gender="Male"))} #all
-    if (v == 46){var46<-expression(varPed(x="z.sd_field", gender="Male"))}#fwest and track only 
-    if (v == 47){var.dist<-expression(varPed(x=c("X", "Y"), gender="Male", relational="MATE"))}
+    if (v == 43){var43<-expression(varPed(x="z.tot_flwrs", gender="Male"))} 
+    if (v == 44){var44<-expression(varPed(x="z.dur", gender="Male"))} #comp and b30 only
+    if (v == 45){var45<-expression(varPed(x="z.dur_inpop", gender="Male"))} #fwest and track only
+    if (v == 46){var46<-expression(varPed(x="z.dur_total", gender="Male"))}#fwest and track only 
+    if (v == 47){var47<-expression(varPed(x="z.sd", gender="Male"))} #all
+    if (v == 48){var48<-expression(varPed(x="z.sd_field", gender="Male"))}#fwest and track only 
+    if (v == 49){var.dist<-expression(varPed(x=c("X", "Y"), gender="Male", relational="MATE"))}
     
     if(v == 48){var.small<-expression(varPed(x="sm_clump",gender="Male",relational="MATE"))}
     if(v == 49){var.medium<-expression(varPed(x="med_clump",gender="Male",relational="MATE"))}
@@ -511,13 +591,16 @@ if (Distance == "Fancy"){
     if(v == 51){var.clump<-expression(varPed(x="clump_pos",gender="Male",relational="MATE"))}
     
   } #end for loop
-  Vrs.list<-lapply(ls(pattern="var*"),get)
+  
+
+    Vrs.list<-lapply(ls(pattern="var*"),get)
   
   BrapaG_alleles<-BrapaG_for_MB
   BrapaG_alleles$timevar<-NULL
   alleles<-extractA(BrapaG_alleles)#estimate true allele frequencies based on largest available sample
   #only need gender in phenotype not genotype
   BrapaG_for_MB$timevar<-NULL
+
   
   
   ####GdP####
@@ -537,11 +620,13 @@ if (Distance == "Fancy"){
   #        sum(Vrs) == 841) {PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var15,var16, var17,var18,var19,var20,var21,var22,var23,var24,var25,var26,var27,var28,var29,var30,var31,var32,var33,var34,var35,var36,var37,var38,var39,var40,var41,var42,var.dist), data=BrapaP_for_MB)}
   
 #PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, var.dist), data=BrapaP_for_MB)
-  PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var.dist, var41, var43,var44,var45,var46), data=BrapaP_for_MB)
+  #PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var.dist, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14, var41, var42,var45), data=BrapaP_for_MB)
+#  PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var15, var16, var17, var18, var19, var20, var21, var22, var23, var24, var25, var26, var27, var28, var29, var30, var31, var32, var33, var34, var35, var36, var37, var38, var39, var40, var41, var42), data=BrapaP_for_MB)
+  PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var43, var45, var48, var.dist), data=BrapaP_for_MB)
   # when just one alone, it is missing covariate data
-  
+  #, var43, var45, var46, var47, var48, var.dist
 
- # var15, var16, var17, var18, var19, var20, var21, var22, var23, var24, var25, var26, var27, var28, var30, var31, var32, var33, var34, var35, var36, var37, var38, var39, var40
+ # var15, var16, var17, var18, var19, var20, var21, var22, var23, var24, var25, var26, var27, var28, var29, var30, var31, var32, var33, var34, var35, var36, var37, var38, var39, var40, var41, var43, var44, var45, var46, var.dist
   #var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14
   
   ####chain####
@@ -568,11 +653,11 @@ if (Distance == "Fancy"){
   ####saving output####
   Beta.out<-ch1$beta
   B<-length(Beta.out)
-  Beta.df<-as.data.frame(matrix(nrow=B,ncol=1))
+  Beta.df<-as.data.frame(matrix(nrow=B,ncol=18))
   for (b in 1:B){
     Beta.df[b,1]<-Beta.out[b]
   }
-  write.csv(Beta.df, "Beta.df.fwest.phenotraits.csv", row.names=FALSE)
+  write.csv(Beta.df, "Beta.df.B30_Jan24.csv", row.names=FALSE)
   
   summary(ch1$beta)
   
