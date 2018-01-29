@@ -5,18 +5,18 @@ library(tidyr)
 
 #Parameters
 group<-"All" #or "Batch"
-Plot<-"Fwest" #pick the batch you want
+Plot<-"Track" #pick the batch you want
 Type<-"Part"
 extra<-"Batch"
-Distance<-"Fancy" #meaning special clump distances 
-Vrs<-c(1:47) #variables want to calculate
+Distance<-"Not-Fancy" #Fancy-meaning special clump distances 
+Vrs<-c(1:51) #variables want to calculate
 trait.fun<-function(Plot, type="Full"){
   if (Plot == "B30" | Plot == "Comp") {
-    if (type == "Full") {traits<-c(1:14,41:47)} else if (
-      type == "Part") {traits<-c(41:47)}} else if (
+    if (type == "Full") {traits<-c(1:14,41:50)} else if (
+      type == "Part") {traits<-c(41:50)}} else if (
         Plot == "Fwest" | Plot == "Track") {
-        if (type == "Full") {traits<-c(15:47)} else if (
-          type == "Part") {traits<-c(41:47)}}
+        if (type == "Full") {traits<-c(15:50)} else if (
+          type == "Part") {traits<-c(41:50)}}
   
   return(traits)
 } #select traits based on plots #select traits based on plots
@@ -53,7 +53,12 @@ if (group == "All") {
   BrapaP$X.1<-NULL
   BrapaG$sex<-NULL
   BrapaG<-merge(BrapaP,BrapaG,by="id")
-  BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur,tot_flwrs,sex))
+  if (Plot == "B30" | Plot == "Comp"){
+    BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur,tot_flwrs,sex))
+  }
+  if (Plot == "Fwest" | Plot == "Track"){
+    BrapaG<-subset(BrapaG, select=-c(offspring,terr,X,Y,ft,dur_inpop,dur_total,tot_flwrs,sex))
+  }
 
   
   if (Plot == "Fwest"){
@@ -127,7 +132,7 @@ if (group == "All") {
   }#end of if statment for mating opporunity trait for B30 and Comp
   if (Plot == "Fwest" | Plot == "Track"){
     BrapaP_test<-select(BrapaP_male, d228:d286)
-    flwr_test<-select(BrapaP_male, id:sex)
+    flwr_test<-select(BrapaP_male, id:dur_total)
   }#end of if statment for mating opporunity trait for Fwest and Track
   
   for (k in 1:nrow(BrapaP_test)){
@@ -196,7 +201,7 @@ if (group == "All") {
     BrapaP_male$batchsumP<-rowSums(BrapaP_male[,47:48])
     BrapaP_male$batchsumQ<-rowSums(BrapaP_male[,48:49])
     
-    BrapaP_male<-BrapaP_male[,-c(2:10,25:49)] 
+    BrapaP_male<-BrapaP_male[,-c(2:11,25:50)] 
     BrapaP<-merge(BrapaP,BrapaP_male,by="id",all.x=T)
     BrapaP<-distinct(BrapaP)
   }#creates batchsum and batch dur proportion variables in Fwest or Track 
@@ -320,9 +325,11 @@ if (group == "All") {
       
       if (t == 43){tot_flwrs<-"Total flowers for a season"}
       if (t == 44){dur<-"Duration for a season"}
-      if (t == 45){sd<-"Start Date"}
-      if (t == 46){sd_field<-"Start date in the field"}
-      if (t == 47){var.dist<-"X and Ycoordinates of an individual"}
+      if (t == 45){dur_inpop<-"Duration in the population"}#for fwest and track only
+      if (t == 46){dur_total<-"Duration in and out of the population"}#for fwest and track only
+      if (t == 47){sd<-"Start Date"}
+      if (t == 48){sd_field<-"Start date in the field"}
+      if (t == 49){var.dist<-"X and Ycoordinates of an individual"}
       
     } #end for loop
     #grep out all the males so you can z score all of their traits
@@ -333,7 +340,7 @@ if (group == "All") {
     #make same as above
     #Convert the traits we want to estimate selection on to z-scores
     BrapaP_male2<-BrapaP[grep("Male",BrapaP$sex),]
-    trait_file<-select(BrapaP_male2, id, tot_flwrs, batchdurG:batchsumQ)
+    trait_file<-select(BrapaP_male2, id, tot_flwrs, dur_inpop:batchsumQ)
     p.list<-c(2:33)
     for (p in p.list){
       trait_file<-zscore.fun(trait_file,trait_file[,p],paste(names(trait_file)[p],sep="."))
@@ -351,11 +358,9 @@ if (group == "All") {
     # it worked.. woohoo! but still werid...
   }
   if (Plot == "Fwest" | Plot == "Track"){
-    BrapaP<-BrapaP[,-c(7:9,11:40)]
-    trait_file<-trait_file[,-c(2:32)]
+    BrapaP<-BrapaP[,-c(7:8,10:40)]
+    trait_file<-trait_file[,-c(2:33)]
     BrapaP<-merge(BrapaP, trait_file, by = "id",all.x=T)
-    BrapaP$z.z.tot_flwrs<-NULL
-    #IDK why I have two z.tot_flowers columns... but ill look into it later
     #for some reason, this full_join is going way over board... like it should be about 11,000 cells individuals from BrapaP and 1,500 from BrapaP_males to get 12,500. But instead i get 82,902! I am going to see if erasing duplciates fixes this
     BrapaP<-distinct(BrapaP)
     # it worked.. woohoo! but still werid...
@@ -384,14 +389,21 @@ if (Distance == "Fancy"){
     female5$id<-paste(female5$X1,female5$X2,female5$X3,sep="_")
     female5<-female5[,-c(1:3)]
     female1<-merge(female1,female5,by="id")
-    if (Plot == Track){
+    if (Plot == "B30"){
+      female1<-female1[,-c(2:24)]#may not work for B30... have to do another loop with in here to make sure it works
+    }
+    if (Plot == "Track"){
       female1<-female1[,-c(2:35)]#may not work for B30... have to do another loop with in here to make sure it works
     }
     
     test<-rbind(female1,male6)
+    test<-distinct(test)
     
     BrapaP<-merge(BrapaP,test,by="id",all.x=T)#creates more individuals.... because same dad can have possibly 3 different letters.. this may affect something down the line... should make this a separate part of the code.
     BrapaP<-distinct(BrapaP)
+    
+    #need to create fake clump for offspring: "Z"
+    BrapaP$clump_pos[BrapaP$offspring == 1]<-"Z"
     
   }#end of loop for applying small, med, and large restrictions for even plots
   
@@ -485,14 +497,18 @@ if (Distance == "Fancy"){
     if (v == 39){var39<-expression(varPed(x="z.batchdurP", gender="Male"))}
     if (v == 40){var40<-expression(varPed(x="z.batchdurQ", gender="Male"))}
     
-    if (v == 41){var41<-expression(varPed(x="tot_flwrs", gender="Male"))} 
-    if (v == 42){var42<-expression(varPed(x="z.dur_flwrs", gender="Male"))} 
-    if (v == 43){var.dist<-expression(varPed(x=c("X", "Y"), gender="Male", relational="MATE"))}
+    if (v == 41){var41<-expression(varPed(x="z.tot_flwrs", gender="Male"))} 
+    if (v == 42){var42<-expression(varPed(x="z.dur", gender="Male"))} #comp and b30 only
+    if (v == 43){var43<-expression(varPed(x="z.dur_inpop", gender="Male"))} #fwest and track only
+    if (v == 44){var44<-expression(varPed(x="z.dur_total", gender="Male"))}#fwest and track only 
+    if (v == 45){var45<-expression(varPed(x="z.sd", gender="Male"))} #all
+    if (v == 46){var46<-expression(varPed(x="z.sd_field", gender="Male"))}#fwest and track only 
+    if (v == 47){var.dist<-expression(varPed(x=c("X", "Y"), gender="Male", relational="MATE"))}
     
-    if(v == 44){var.small<-expression(varPed(x="sm_clump",gender="Male",relational="MATE"))}
-    if(v == 45){var.medium<-expression(varPed(x="med_clump",gender="Male",relational="MATE"))}
-    if(v == 46){var.large<-expression(varPed(x="lrg_clump",gender="Male",relational="MATE"))}
-    if(v == 47){var.clump<-expression(varPed(x="clump_pos",gender="Male",relational="MATE"))}
+    if(v == 48){var.small<-expression(varPed(x="sm_clump",gender="Male",relational="MATE"))}
+    if(v == 49){var.medium<-expression(varPed(x="med_clump",gender="Male",relational="MATE"))}
+    if(v == 50){var.large<-expression(varPed(x="lrg_clump",gender="Male",relational="MATE"))}
+    if(v == 51){var.clump<-expression(varPed(x="clump_pos",gender="Male",relational="MATE"))}
     
   } #end for loop
   Vrs.list<-lapply(ls(pattern="var*"),get)
@@ -521,7 +537,7 @@ if (Distance == "Fancy"){
   #        sum(Vrs) == 841) {PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var15,var16, var17,var18,var19,var20,var21,var22,var23,var24,var25,var26,var27,var28,var29,var30,var31,var32,var33,var34,var35,var36,var37,var38,var39,var40,var41,var42,var.dist), data=BrapaP_for_MB)}
   
 #PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, var.dist), data=BrapaP_for_MB)
-  PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var.small), data=BrapaP_for_MB)
+  PdP<-PdataPed(formula=list(res.osnotpar, res.osterr, res.phen, var.dist, var41, var43,var44,var45,var46), data=BrapaP_for_MB)
   # when just one alone, it is missing covariate data
   
 
@@ -543,7 +559,9 @@ if (Distance == "Fancy"){
   #BrapaP_for_MB$population_num=NULL
   #BrapaP_for_MB$type_of_site=NULL
   
-
+#  test<-as.matrix(PdP)
+ # df <- data.frame(matrix(unlist(PdP), nrow=1585, byrow=T))
+  #df2 <- data.frame(matrix(unlist(PdP), nrow=1585, byrow=T),stringsAsFactors=FALSE)
   
   ch1<-MCMCped(PdP=PdP, GdP=GdP, sP=sP.chain1, tP=tP,verbose=T,mm.tol=5, nitt=10000+(10000*10), thin=10*10, burnin=10000)
 
@@ -554,7 +572,7 @@ if (Distance == "Fancy"){
   for (b in 1:B){
     Beta.df[b,1]<-Beta.out[b]
   }
-  write.csv(Beta.df, "Beta.df.csv", row.names=FALSE)
+  write.csv(Beta.df, "Beta.df.fwest.phenotraits.csv", row.names=FALSE)
   
   summary(ch1$beta)
   
